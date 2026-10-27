@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maze</title>
+  <meta name="description" content="A glowing maze game for the browser: three perfect-maze generators, five growing levels, an animated shortest-path hint and best times. Vanilla JS, no build step.">
+  <meta name="theme-color" content="#0f172a">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Maze">
+  <meta property="og:description" content="Find the glowing exit: perfect mazes from three generators, five growing levels, an animated BFS hint and best times.">
+  <meta property="og:url" content="https://celaldrg.github.io/maze/">
+  <meta property="og:image" content="https://celaldrg.github.io/maze/docs/screenshot.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="800">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%230f172a'/%3E%3Cpath%20d='M5%2011v16h22M27%2021V5H5M11%205v12h6M21%2011v10h-6v6'%20fill='none'%20stroke='%23f472b6'%20stroke-width='2.6'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3Ccircle%20cx='24'%20cy='24'%20r='2.4'%20fill='%2334d399'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="src/main.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="#1e293b"/>
+          <path d="M5 11v16h22M27 21V5H5M11 5v12h6M21 11v10h-6v6" fill="none" stroke="#f472b6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="24" cy="24" r="2.4" fill="#34d399"/>
+        </svg>
+        <h1 class="brand-name" data-i18n="title">Maze</h1>
+        <span class="brand-tagline" data-i18n="tagline">Find the glowing exit</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn" id="restart" type="button">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v5h5"/><path d="M4.6 9a8 8 0 1 1-.6 3"/></svg>
+          <span data-i18n="restart">Restart</span>
+        </button>
+        <button class="btn btn-lang" id="lang" type="button" data-i18n-label="switchLanguage" data-i18n-title="switchLanguage" aria-label="TR: switch to Turkish" title="TR: switch to Turkish">TR</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="hud">
+        <label class="stat stat-level">
+          <span class="stat-label" id="level-label">Level 1/5</span>
+          <span class="stat-value">
+            <span id="level-value">8×8</span>
+            <svg class="icon icon-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </span>
+          <select class="stat-select" id="level" data-i18n-label="level" aria-label="Level"></select>
+        </label>
+        <div class="stat">
+          <span class="stat-label">
+            <span data-i18n="time">Time</span>
+            <span class="badge" id="assisted" data-i18n="assisted" data-i18n-title="assistedHint" hidden>Assisted</span>
+          </span>
+          <span class="stat-value" id="time">0:00.0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label" data-i18n="best">Best</span>
+          <span class="stat-value" id="best">—</span>
+        </div>
+      </section>
+
+      <section class="stage" id="stage">
+        <div class="board-wrap" id="board-wrap">
+          <canvas class="board" id="board" role="img" data-i18n-label="board" aria-label="Maze board. Reach the glowing exit in the bottom-right corner."></canvas>
+          <p class="start-hint" id="start-hint" data-i18n="startHint">Reach the glowing exit ↘</p>
+          <div class="win" id="win" hidden>
+            <div class="win-card" role="dialog" aria-labelledby="win-title" aria-describedby="win-stats win-note">
+              <h2 class="win-title" id="win-title" data-i18n="winTitle">Maze solved!</h2>
+              <p class="win-stats" id="win-stats"></p>
+              <p class="win-note" id="win-note"></p>
+              <div class="win-actions">
+                <button class="btn" id="win-new" type="button" data-i18n="newMaze">New maze</button>
+                <button class="btn btn-primary" id="win-next" type="button">Next level</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="actions">
+        <button class="btn" id="new-maze" type="button">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v8h5M15 8v13M9 15v6"/></svg>
+          <span data-i18n="newMaze">New maze</span>
+        </button>
+        <button class="btn btn-solution" id="solution" type="button">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="6" r="2.2"/><path d="M8.2 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.8"/></svg>
+          <span id="solution-label">Show solution</span>
+        </button>
+        <label class="field">
+          <span class="field-label" data-i18n="algorithm">Algorithm</span>
+          <span class="select"><select id="algorithm"></select></span>
+        </label>
+        <p class="about" id="algorithm-about"></p>
+      </section>
+
+      <section class="controls">
+        <div class="pad" id="pad" role="group" data-i18n-label="pad" aria-label="Direction pad">
+          <button class="pad-btn" type="button" data-dir="up" data-i18n-label="up" aria-label="Up">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+          </button>
+          <button class="pad-btn" type="button" data-dir="left" data-i18n-label="left" aria-label="Left">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+          </button>
+          <span class="pad-center" aria-hidden="true"></span>
+          <button class="pad-btn" type="button" data-dir="right" data-i18n-label="right" aria-label="Right">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="pad-btn" type="button" data-dir="down" data-i18n-label="down" aria-label="Down">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+        </div>
+        <dl class="help">
+          <div><dt><kbd data-i18n="helpMoveKeys">Arrows / WASD</kbd></dt><dd data-i18n="helpMove">Move one cell</dd></div>
+          <div><dt><kbd data-i18n="helpHoldKey">Hold</kbd></dt><dd data-i18n="helpHold">Run to the next junction</dd></div>
+          <div><dt><kbd data-i18n="helpSwipeKey">Swipe</kbd></dt><dd data-i18n="helpSwipe">Dash on touch screens</dd></div>
+        </dl>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span data-i18n="license">MIT</span>
+      <span aria-hidden="true">·</span>
+      <a href="https://github.com/celaldrg/maze" data-i18n="source">Source on GitHub</a>
+    </footer>
+  </div>
+</body>
+</html>
